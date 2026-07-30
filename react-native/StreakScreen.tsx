@@ -20,7 +20,7 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, withDelay, withRepeat, withSequence,
   Easing, interpolate, Extrapolation, cancelAnimation, runOnJS,
 } from 'react-native-reanimated';
-import Svg, { Path, Defs, LinearGradient, RadialGradient, Stop, Ellipse, G } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, RadialGradient, Stop, Ellipse, G, Text as SvgText } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -136,6 +136,37 @@ function GlowDome({ color, w, h }: { color: string; w: number; h: number }) {
         </RadialGradient>
       </Defs>
       <Ellipse cx={w / 2} cy={h / 2} rx={w / 2} ry={h / 2} fill="url(#dome)" />
+    </Svg>
+  );
+}
+
+/**
+ * Золота цифра. У RN текст не заливається градієнтом напряму, тому число
+ * малюється через SVG <Text> із linearGradient. Стопи 1:1 з Figma:
+ * Colors/Yellow/500 (#ffd429) → #f5735c, ЗГОРИ ВНИЗ.
+ */
+function GoldText({ value, size, weight, width, height, tracking = 0 }: {
+  value: string; size: number; weight: string; width: number; height: number; tracking?: number;
+}) {
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <LinearGradient id={'gold' + size} x1="0" y1="0" x2="0" y2={height} gradientUnits="userSpaceOnUse">
+          <Stop offset="0" stopColor="#ffd429" />
+          <Stop offset="1" stopColor="#f5735c" />
+        </LinearGradient>
+      </Defs>
+      <SvgText
+        x={width / 2}
+        y={size}
+        textAnchor="middle"
+        fontFamily={weight}
+        fontSize={size}
+        letterSpacing={tracking}
+        fill={'url(#gold' + size + ')'}
+      >
+        {value}
+      </SvgText>
     </Svg>
   );
 }
@@ -364,11 +395,17 @@ export default function StreakScreen({
 
       {/* ЧИСЛО. Вікно з overflow:hidden — без кліпу барабан читається як зсув */}
       <View style={styles.numWindow}>
-        <Animated.Text style={[styles.digit, { color: c.textDefault }, oldDigitStyle]}>{streak - 1}</Animated.Text>
-        <Animated.Text style={[styles.digit, { color: c.textDefault }, newDigitStyle]}>{streak}</Animated.Text>
+        <Animated.View style={[styles.digit, oldDigitStyle]}>
+          <GoldText value={String(streak - 1)} size={56} weight="Poppins-Bold" width={SCREEN_W} height={64} />
+        </Animated.View>
+        <Animated.View style={[styles.digit, newDigitStyle]}>
+          <GoldText value={String(streak)} size={56} weight="Poppins-Bold" width={SCREEN_W} height={64} />
+        </Animated.View>
       </View>
 
-      <Animated.Text style={[styles.caps, { color: c.textSecondary }, capsStyle]}>DAY STREAK</Animated.Text>
+      <Animated.View style={[styles.caps, capsStyle]}>
+        <GoldText value="DAY STREAK" size={12} weight="Poppins-Medium" width={SCREEN_W} height={18} tracking={0.96} />
+      </Animated.View>
       <Animated.Text style={[styles.title, { color: c.textDefault }, titleStyle]}>You're on fire</Animated.Text>
       <Animated.Text style={[styles.body, { color: c.textSecondary }, bodyStyle]}>
         Come back tomorrow to keep it alive.
@@ -493,11 +530,9 @@ const styles = StyleSheet.create({
   flash: { position: 'absolute', left: 206, top: 456 },
 
   numWindow: { position: 'absolute', left: 0, top: 537, width: SCREEN_W, height: 64, overflow: 'hidden' },
-  digit: { position: 'absolute', left: 0, width: SCREEN_W, textAlign: 'center',
-           fontFamily: 'Poppins-Bold', fontSize: 56, lineHeight: 64 },
+  digit: { position: 'absolute', left: 0, top: 0, width: SCREEN_W, height: 64 },
 
-  caps: { position: 'absolute', left: 0, top: 605, width: SCREEN_W, textAlign: 'center',
-          fontFamily: 'Poppins-Medium', fontSize: 12, lineHeight: 18, letterSpacing: 0.96 },
+  caps: { position: 'absolute', left: 0, top: 605, width: SCREEN_W, height: 18 },
   title: { position: 'absolute', left: SPACE.s32, top: 687, width: 376, textAlign: 'center',
            fontFamily: 'Poppins-SemiBold', fontSize: 16, lineHeight: 24 },
   body: { position: 'absolute', left: SPACE.s32, top: 715, width: 376, textAlign: 'center',
