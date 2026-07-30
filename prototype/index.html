@@ -5,10 +5,10 @@
 <title>Streak Screen — Motion v2 (чирк → розгорається → іскри)</title>
 <style>
   :root{--bg:#0c0d11;--text:#f9fafd;--secondary:#c2c3cb;--amber:#ffcc00;--ring:#4f5059;
-        --cta:#f9fafd;--cta-label:#0c0d11;--panel:#15161c;--line:#24252d}
+        --cta:#f9fafd;--cta-label:#0c0d11;--base:#393292;--panel:#15161c;--line:#24252d}
   /* світла тема = резолвнуті значення тих самих токенів */
   .phone.light{--bg:#f9fafd;--text:#0c0d11;--secondary:#4f5059;--ring:#dddee4;
-               --cta:#0c0d11;--cta-label:#f9fafd}
+               --cta:#0c0d11;--cta-label:#f9fafd;--base:#ebedff}
   /* розфокус працює тільки на чорному — на світлому боке й пилинки читаються як бруд */
   .phone.light .bokeh,.phone.light .faint,.phone.light .dust,.phone.light .halo{display:none}
   *{box-sizing:border-box}
@@ -20,18 +20,11 @@
 
   /* глоу за рецептом Opal: широкий теплий купол + щільне ядро */
   .dome{left:-100px;top:-40px;width:640px;height:500px;border-radius:50%;
-        background:radial-gradient(closest-side,rgba(255,150,40,.85),rgba(255,120,20,.26) 55%,rgba(255,100,0,0));
+        background:radial-gradient(closest-side,var(--amber),rgba(255,204,0,0));
         filter:blur(70px);opacity:0}
-  .aura{left:-60px;top:110px;width:560px;height:560px;border-radius:50%;
-        background:radial-gradient(closest-side,var(--amber),rgba(255,204,0,0));filter:blur(60px);opacity:0}
   /* холодна підошва біля основи, як у свічки */
   .base{left:158px;top:486px;width:124px;height:24px;border-radius:50%;
-        background:radial-gradient(closest-side,rgba(90,120,255,.5),rgba(90,120,255,0));filter:blur(10px);opacity:0}
-  /* золотий текст — як в Opal (перемикач) */
-  .gold .num span{background:linear-gradient(180deg,#FFE7A3 0%,#FFC24D 45%,#FF9B1C 100%);
-                  -webkit-background-clip:text;background-clip:text;color:transparent}
-  .gold .num span.g{color:#FFB53A;background:none;-webkit-background-clip:border-box;background-clip:border-box}
-  .gold .caps{color:#FFC24D}
+        background:radial-gradient(closest-side,var(--base),transparent);filter:blur(10px);opacity:0}
   .bokeh{border-radius:50%;background:var(--amber);opacity:0}
   .faint{opacity:0}
   .halo{left:30px;top:210px;width:380px;height:380px;filter:blur(34px);opacity:0}
@@ -48,16 +41,19 @@
          background:radial-gradient(closest-side,#fffdf5,rgba(255,204,0,.7),rgba(255,204,0,0));opacity:0}
   .sp{border-radius:50%;background:radial-gradient(closest-side,#fff6dc,rgba(255,180,12,.9),rgba(255,140,0,0));opacity:0}
 
-  .vignette{inset:0;background:radial-gradient(ellipse 62% 44% at 50% 38%,transparent 45%,var(--bg) 100%);opacity:.45}
+  .vignette{inset:0;background:radial-gradient(ellipse 62% 44% at 50% 38%,transparent 45%,var(--bg) 100%);opacity:.5}
 
   .num{left:0;top:537px;width:440px;height:64px;text-align:center;overflow:hidden;perspective:460px}
   .num span{position:absolute;left:0;width:440px;font-size:56px;line-height:64px;font-weight:700;
-            color:var(--text);backface-visibility:hidden;transform-origin:50% 50%}
+            background:linear-gradient(180deg,#ffd429 0%,#f5735c 100%);
+            -webkit-background-clip:text;background-clip:text;color:transparent;
+            backface-visibility:hidden;transform-origin:50% 50%}
   /* глоу під числом ВИДАЛЕНО — на теплому куполі він давав брудну пляму */
   .num span.g{display:none}
   .numglow{display:none}
   .caps{left:0;top:605px;width:440px;text-align:center;font-size:12px;line-height:18px;font-weight:500;
-        letter-spacing:.08em;color:var(--secondary);opacity:0}
+        letter-spacing:.08em;background:linear-gradient(180deg,#ffd429 0%,#f5735c 100%);
+        -webkit-background-clip:text;background-clip:text;color:transparent;opacity:0}
   .capsglow{display:none}
   .ptitle{left:32px;top:687px;width:376px;text-align:center;font-size:16px;line-height:24px;font-weight:600;color:var(--text);opacity:0}
   .pbody{left:32px;top:715px;width:376px;text-align:center;font-size:14px;line-height:21px;color:var(--secondary);opacity:0}
@@ -151,7 +147,6 @@
 <div class="stage">
   <div class="phone" id="phone">
     <div class="dome" id="dome"></div>
-    <div class="aura" id="aura"></div>
     <div class="base" id="base"></div>
 
     <div class="bokeh" style="left:-40px;top:280px;width:180px;height:180px;filter:blur(40px)"></div>
@@ -202,7 +197,6 @@
     <button class="primary" id="replay">↻ Replay</button>
     <button id="speed">1×</button>
     <label class="chk"><input type="checkbox" id="reduce"> Reduce motion</label>
-    <label class="chk"><input type="checkbox" id="goldchk"> Золотий текст (як в Opal)</label>
     <button id="theme">☾ Dark</button>
   </div>
   <input type="range" id="scrub" min="0" max="4350" value="4350" step="10">
@@ -320,7 +314,6 @@ A(q('hero'),250,900,null,function(e,p){
 /* світло — ПІСЛЯ форми */
 A(q('hglow'),580,900,EO,function(e,p){e.style.opacity=.3*p;e.style.transform='scale('+(.7+.3*p)+')';});
 A(q('dome'),560,1100,EO,function(e,p){e.style.opacity=.3*p;e.style.transform='scale('+(.72+.28*p)+')';});
-A(q('aura'),630,1000,EO,function(e,p){e.style.opacity=.16*p;e.style.transform='scale('+(.75+.25*p)+')';});
 A(q('base'),700,800,EO,function(e,p){e.style.opacity=.4*p;});
 A(q('halo'),680,1000,EO,function(e,p){e.style.opacity=.1*p;});
 qa('.bokeh').forEach(function(el,i){A(el,780+i*90,820,O,function(e,p){e.style.opacity=.1*p;e.style.transform='translateY('+12*(1-p)+'px)';});});
@@ -373,7 +366,7 @@ A(q('pbody'),2580,380,O,function(e,p){e.style.opacity=p;e.style.transform='trans
 cells.forEach(function(el,i){A(el,2750+i*55,320,O,function(e,p){e.style.opacity=p;e.style.transform='translateY('+10*(1-p)+'px)';});});
 /* шкала росте від Mon праворуч */
 A(q('track'),2950,600,S,function(e,p){e.style.transform='scaleX('+p+')';e.style.opacity=.1*p;});
-A(q('trackglow'),2950,600,S,function(e,p){e.style.transform='scaleX('+p+')';e.style.opacity=.3*p;});
+A(q('trackglow'),2950,600,S,function(e,p){e.style.transform='scaleX('+p+')';e.style.opacity=.15*p;});
 /* бігунки: злива направо, перший їде на кінчику шкали */
 runners.forEach(function(el,i){
   var st=[2950,3120,3270][i];
@@ -382,14 +375,14 @@ runners.forEach(function(el,i){
     e.style.transform='translateX('+(8+132*p)+'px) scale('+(1.15-.4*p)+')';});
 });
 /* проходить Tue — той дає флер */
-A(flares[1],3280,440,O,function(e,p){e.style.opacity=p<.35?p/.35*.55:.55-(p-.35)/.65*.55;});
+A(flares[1],3280,440,O,function(e,p){e.style.opacity=p<.35?p/.35*.55:.55*(1-(p-.35)/.65);});
 A(cells[1].querySelector('.mark'),3280,340,B,function(e,p){e.style.transform='scale('+(1+.12*Math.sin(Math.PI*p))+')';});
 /* доїхав до сьогодні — вогник займається тим самим рухом, що герой */
 A(todayMark,3560,520,null,function(e,p){
   if(p<=0){e.style.transform='scale(0)';return;}
   var g=EO(p),sy=.15+.85*g,sx=(.6+.4*g)*(1+.12*Math.sin(Math.PI*Math.min(1,p*1.15)));
   e.style.transform='scale('+sx.toFixed(3)+','+sy.toFixed(3)+')';});
-A(flares[2],3560,700,O,function(e,p){e.style.opacity=p<.3?p/.3*.7:.7-(p-.3)/.7*.45;});
+A(flares[2],3560,700,O,function(e,p){e.style.opacity=p<.3?p/.3*.7:.7*(1-(p-.3)/.7);});
 
 /* 5 · ДІЯ */
 A(q('cta'),3950,350,O,function(e,p){e.style.opacity=p;e.style.transform='translateY('+16*(1-p)+'px)';});
@@ -455,7 +448,6 @@ q('replay').onclick=play;
 scrub.oninput=function(){playing=false;apply(+scrub.value);};
 reduce.onchange=function(){apply(+scrub.value);};
 q('speed').onclick=function(e){var n={1:.5,.5:.25,.25:1}[speed];speed=n;e.target.textContent=n+'×';};
-q('goldchk').onchange=function(e){phone.classList.toggle('gold',e.target.checked);};
 q('theme').onclick=function(e){
   var light=phone.classList.toggle('light');
   e.target.textContent=light?'☀ Light':'☾ Dark';
