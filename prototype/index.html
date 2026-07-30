@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Streak Screen — Motion v2 (чирк → розгорається → іскри)</title>
+<style>
+  :root{--bg:#0c0d11;--text:#f9fafd;--secondary:#c2c3cb;--amber:#ffcc00;--ring:#4f5059;
+        --cta:#f9fafd;--cta-label:#0c0d11;--panel:#15161c;--line:#24252d}
+  /* світла тема = резолвнуті значення тих самих токенів */
+  .phone.light{--bg:#f9fafd;--text:#0c0d11;--secondary:#4f5059;--ring:#dddee4;
+               --cta:#0c0d11;--cta-label:#f9fafd}
+  /* розфокус працює тільки на чорному — на світлому боке й пилинки читаються як бруд */
+  .phone.light .bokeh,.phone.light .faint,.phone.light .dust,.phone.light .halo{display:none}
+  *{box-sizing:border-box}
+  body{margin:0;background:#08090c;color:#e8e9ee;font-family:Poppins,-apple-system,BlinkMacSystemFont,sans-serif;
+       display:flex;gap:40px;padding:40px;align-items:flex-start;justify-content:center;min-height:100vh}
+  .phone{width:440px;height:956px;background:var(--bg);position:relative;overflow:hidden;border-radius:44px;
+         transform-origin:top left;box-shadow:0 40px 120px rgba(0,0,0,.6)}
+  .phone *{position:absolute}
+
+  /* глоу за рецептом Opal: широкий теплий купол + щільне ядро */
+  .dome{left:-100px;top:-40px;width:640px;height:500px;border-radius:50%;
+        background:radial-gradient(closest-side,rgba(255,150,40,.85),rgba(255,120,20,.26) 55%,rgba(255,100,0,0));
+        filter:blur(70px);opacity:0}
+  .aura{left:-60px;top:110px;width:560px;height:560px;border-radius:50%;
+        background:radial-gradient(closest-side,var(--amber),rgba(255,204,0,0));filter:blur(60px);opacity:0}
+  /* холодна підошва біля основи, як у свічки */
+  .base{left:158px;top:486px;width:124px;height:24px;border-radius:50%;
+        background:radial-gradient(closest-side,rgba(90,120,255,.5),rgba(90,120,255,0));filter:blur(10px);opacity:0}
+  /* золотий текст — як в Opal (перемикач) */
+  .gold .num span{background:linear-gradient(180deg,#FFE7A3 0%,#FFC24D 45%,#FF9B1C 100%);
+                  -webkit-background-clip:text;background-clip:text;color:transparent}
+  .gold .num span.g{color:#FFB53A;background:none;-webkit-background-clip:border-box;background-clip:border-box}
+  .gold .caps{color:#FFC24D}
+  .bokeh{border-radius:50%;background:var(--amber);opacity:0}
+  .faint{opacity:0}
+  .halo{left:30px;top:210px;width:380px;height:380px;filter:blur(34px);opacity:0}
+  .hglow{left:100px;top:280px;width:240px;height:240px;border-radius:50%;
+         background:radial-gradient(closest-side,rgba(255,204,0,.6),rgba(255,204,0,0));filter:blur(24px);opacity:0}
+  .hero{left:80px;top:240px;width:280px;height:280px;opacity:0;transform-origin:50% 86%}
+  .hero .wob{position:absolute;inset:0;transform-origin:50% 88%}
+  .dust{border-radius:50%;background:var(--amber);opacity:0}
+
+  /* чирк */
+  .strike{left:196px;top:472px;width:48px;height:2px;border-radius:2px;transform-origin:left center;
+          background:linear-gradient(90deg,rgba(255,255,255,0),#fff8e0,rgba(255,204,0,0));opacity:0}
+  .flash{left:206px;top:456px;width:28px;height:28px;border-radius:50%;
+         background:radial-gradient(closest-side,#fffdf5,rgba(255,204,0,.7),rgba(255,204,0,0));opacity:0}
+  .sp{border-radius:50%;background:radial-gradient(closest-side,#fff6dc,rgba(255,180,12,.9),rgba(255,140,0,0));opacity:0}
+
+  .vignette{inset:0;background:radial-gradient(ellipse 62% 44% at 50% 38%,transparent 45%,var(--bg) 100%);opacity:.45}
+
+  .num{left:0;top:537px;width:440px;height:64px;text-align:center;overflow:hidden;perspective:460px}
+  .num span{position:absolute;left:0;width:440px;font-size:56px;line-height:64px;font-weight:700;
+            color:var(--text);backface-visibility:hidden;transform-origin:50% 50%}
+  /* глоу під числом ВИДАЛЕНО — на теплому куполі він давав брудну пляму */
+  .num span.g{display:none}
+  .numglow{display:none}
+  .caps{left:0;top:605px;width:440px;text-align:center;font-size:12px;line-height:18px;font-weight:500;
+        letter-spacing:.08em;color:var(--secondary);opacity:0}
+  .capsglow{display:none}
+  .ptitle{left:32px;top:687px;width:376px;text-align:center;font-size:16px;line-height:24px;font-weight:600;color:var(--text);opacity:0}
+  .pbody{left:32px;top:715px;width:376px;text-align:center;font-size:14px;line-height:21px;color:var(--secondary);opacity:0}
+
+  .week{left:32px;top:770px;width:376px;height:54px}
+  .track{left:0;top:-2px;width:152px;height:28px;border-radius:14px;background:var(--amber);opacity:0;
+         transform:scaleX(0);transform-origin:left center}
+  .trackglow{left:-10px;top:-14px;width:172px;height:52px;border-radius:26px;
+             background:radial-gradient(ellipse closest-side,rgba(255,204,0,.5),rgba(255,204,0,0));
+             filter:blur(10px);opacity:0;transform:scaleX(0);transform-origin:left center}
+  .runner{top:6px;width:8px;height:8px;border-radius:50%;opacity:0;
+          background:radial-gradient(closest-side,#fffaf0,rgba(255,190,12,.95),rgba(255,140,0,0));filter:blur(.4px)}
+  .cell{width:40px;height:54px;top:0;opacity:0;text-align:center}
+  .cell .mark{position:absolute;left:8px;top:0;width:24px;height:24px;transform-origin:50% 86%}
+  .cell .ring{position:absolute;left:9px;top:1px;width:22px;height:22px;border:1px solid var(--ring);border-radius:50%}
+  .cell .lbl{position:absolute;left:0;top:28px;width:40px;font-size:14px;line-height:21px;font-weight:500;color:var(--secondary)}
+  .cell.on .lbl{color:var(--text);font-weight:600}
+  .cflare{position:absolute;left:-8px;top:-16px;width:56px;height:56px;border-radius:50%;
+          background:radial-gradient(closest-side,rgba(255,204,0,.75),rgba(255,204,0,0));filter:blur(8px);opacity:0}
+
+  .cta{left:16px;top:868px;width:408px;height:56px;border-radius:999px;background:var(--cta);
+       display:flex;align-items:center;justify-content:center;opacity:0}
+  .cta b{position:static;font-size:16px;font-weight:600;color:var(--cta-label)}
+
+  @keyframes wobble{0%,100%{transform:rotate(-1.6deg) scale(1)}50%{transform:rotate(1.6deg) scale(1.025)}}
+  @keyframes breathe{0%,100%{transform:scale(1);opacity:.10}50%{transform:scale(1.06);opacity:.07}}
+  .loop .hero .wob{animation:wobble 3s ease-in-out infinite}
+  .loop .bokeh{animation:breathe 9s ease-in-out infinite}
+
+  .panel{flex:1 1 480px;max-width:640px}
+  h1{font-size:22px;font-weight:600;margin:0 0 4px;color:#fff}
+  .sub{color:#8b8d99;font-size:13px;margin:0 0 22px}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  button{background:#22232b;color:#e8e9ee;border:1px solid #32333d;border-radius:10px;padding:9px 16px;
+         font-family:inherit;font-size:13px;font-weight:500;cursor:pointer}
+  button:hover{background:#2b2c36}
+  button.primary{background:var(--text);color:#0c0d11;border-color:var(--text)}
+  input[type=range]{width:100%;accent-color:var(--amber)}
+  .tline{display:flex;justify-content:space-between;font-size:11px;color:#6d6f7a;margin-top:4px;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:7px;align-items:center;font-size:13px;color:#a9abb6}
+  .phase{display:flex;gap:6px;margin-top:14px}
+  .phase div{flex:1;padding:8px 10px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:11.5px;color:#9aa0b4;text-align:center}
+  .phase div.act{border-color:#7a5c00;background:#1d1a10;color:#ffcc00}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:18px}
+  th{text-align:left;font-weight:600;color:#8b8d99;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px;border-bottom:1px solid var(--line)}
+  td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top;color:#d3d5dd}
+  td.t{font-variant-numeric:tabular-nums;color:var(--amber);white-space:nowrap}
+  td code{font-size:11.5px;color:#9aa0b4}
+  .note{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:18px;font-size:13px;line-height:1.6;color:#b6b8c3}
+  .note b{color:#fff;font-weight:600}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="flame3d" viewBox="0 0 200 260">
+    <defs>
+      <radialGradient id="f3o" cx="46%" cy="30%" r="74%">
+        <stop offset="0" stop-color="#FFE6A8"/><stop offset=".40" stop-color="#FFB428"/>
+        <stop offset=".82" stop-color="#FF8E14"/><stop offset="1" stop-color="#EE760C"/>
+      </radialGradient>
+      <linearGradient id="f3i" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFF8D2"/><stop offset=".45" stop-color="#FFD836"/><stop offset="1" stop-color="#FFB300"/>
+      </linearGradient>
+      <radialGradient id="f3hot" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <path d="M100 4 C130 58 186 104 186 158 C186 209 148 252 100 252 C52 252 14 209 14 158 C14 104 70 58 100 4 Z" fill="url(#f3o)"/>
+    <ellipse cx="100" cy="62" rx="24" ry="46" fill="url(#f3hot)"/>
+    <path d="M100 92 C117 126 147 149 147 178 C147 207 126 228 100 228 C74 228 53 207 53 178 C53 149 83 126 100 92 Z" fill="url(#f3i)"/>
+  </symbol>
+  <symbol id="flame" viewBox="0 0 24 24">
+    <g clip-path="url(#fclip)">
+      <g filter="url(#fblur)">
+        <path d="M6.3561 20.4125C7.23549 21.1492 8.27694 21.667 9.39508 21.9235C9.50208 21.9585 9.57408 21.8185 9.50208 21.7485C7.1071 19.4635 8.42309 16.9905 9.39508 15.8756C10.0881 15.0796 11.0751 13.7686 11.0031 12.0106C11.0031 11.8346 11.1831 11.6936 11.3251 11.7996C12.6841 12.5026 13.613 14.0496 13.863 15.3146C14.257 14.9286 14.4 14.3306 14.4 13.8036C14.4 13.6276 14.614 13.4866 14.793 13.6276C16.08 14.7876 18.296 18.7245 14.721 21.8175C14.65 21.8885 14.721 22.0295 14.793 21.9945C15.877 21.7103 16.8965 21.2208 17.796 20.5525C23.623 16.0526 19.833 8.07262 17.366 5.43664C17.045 5.11964 16.473 5.33064 16.473 5.78764C16.437 6.73763 16.151 7.79162 15.401 8.49462C14.829 6.10464 12.923 3.38966 10.2061 2.05367C9.84908 1.87767 9.42008 2.15867 9.45608 2.54567C9.52608 5.81564 7.3931 7.89762 5.53411 10.6046C3.88912 13.0296 2.81713 17.4945 6.3561 20.4125Z" fill="url(#fgrad)"/>
+      </g>
+      <path d="M9.98535 2.50195C12.5592 3.76754 14.3751 6.35545 14.915 8.61133L15.1152 9.44824L15.7432 8.85938C16.6276 8.0303 16.9341 6.82384 16.9727 5.80664V5.79102C16.9741 5.79024 16.9763 5.78992 16.9785 5.78906C16.9882 5.78539 16.9972 5.78512 17.0029 5.78613C17.0052 5.78653 17.0068 5.78661 17.0078 5.78711C17.0082 5.78732 17.0088 5.78838 17.0098 5.78906C18.1804 7.04496 19.6914 9.60619 20.1992 12.3857C20.7041 15.1492 20.2123 18.0526 17.4932 20.1543C17.082 20.4593 16.6438 20.7233 16.1855 20.9463C17.1248 19.6035 17.297 18.1813 17.0723 16.9102C16.783 15.275 15.8463 13.9034 15.1279 13.2559L15.1025 13.2344L15.0068 13.1699C14.7771 13.0375 14.5122 13.0414 14.2979 13.1533C14.0738 13.2703 13.9004 13.5112 13.9004 13.8037C13.9004 13.8305 13.8974 13.8572 13.8965 13.8838C13.4097 12.8764 12.6061 11.8993 11.5547 11.3555C11.2993 11.2064 11.0161 11.2553 10.8242 11.3896C10.6307 11.5253 10.5029 11.7564 10.5029 12.0107V12.0205L10.5039 12.0312C10.5675 13.5852 9.69589 14.7677 9.01758 15.5469C8.49466 16.1468 7.86108 17.1305 7.69141 18.3018C7.56668 19.1629 7.69986 20.0972 8.26465 21.0186C7.69433 20.7641 7.15872 20.4331 6.67676 20.0293L6.67383 20.0264C5.03721 18.6767 4.47204 16.9842 4.50098 15.332C4.53034 13.6612 5.16959 12.0312 5.94727 10.8848C6.40555 10.2176 6.87873 9.59237 7.34375 8.95898C7.80537 8.33023 8.25617 7.69825 8.64746 7.04297C9.38549 5.80691 9.92273 4.47189 9.95605 2.86133V2.51758L9.95508 2.50879C9.95589 2.50816 9.95692 2.50755 9.95801 2.50684C9.96459 2.50253 9.97118 2.50037 9.97559 2.5C9.97734 2.49985 9.9786 2.49985 9.97949 2.5L9.98535 2.50195Z" fill="url(#fgrad2)" stroke="#FF9F0C"/>
+    </g>
+    <defs>
+      <filter id="fblur" x="1" y="-1" width="22.88" height="26" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="1.5"/></filter>
+      <linearGradient id="fgrad" x1="4" y1="12" x2="20.87" y2="12" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#FFB20C"/><stop offset="0.515" stop-color="#FF710C"/><stop offset="1" stop-color="#FFB20C"/></linearGradient>
+      <linearGradient id="fgrad2" x1="4" y1="12" x2="20.87" y2="12" gradientUnits="userSpaceOnUse">
+        <stop stop-color="#FFB20C"/><stop offset="0.515" stop-color="#FF710C"/><stop offset="1" stop-color="#FFB20C"/></linearGradient>
+      <clipPath id="fclip"><rect width="24" height="24" fill="#fff"/></clipPath>
+    </defs>
+  </symbol>
+</svg>
+
+<div class="stage">
+  <div class="phone" id="phone">
+    <div class="dome" id="dome"></div>
+    <div class="aura" id="aura"></div>
+    <div class="base" id="base"></div>
+
+    <div class="bokeh" style="left:-40px;top:280px;width:180px;height:180px;filter:blur(40px)"></div>
+    <div class="bokeh" style="left:330px;top:180px;width:120px;height:120px;filter:blur(32px)"></div>
+    <div class="bokeh" style="left:300px;top:500px;width:160px;height:160px;filter:blur(40px)"></div>
+
+    <svg class="faint" style="left:0;top:330px;width:72px;height:72px;filter:blur(16px)"><use href="#flame"/></svg>
+    <svg class="faint" style="left:376px;top:266px;width:56px;height:56px;filter:blur(14px)"><use href="#flame"/></svg>
+
+    <svg class="halo" id="halo"><use href="#flame"/></svg>
+    <div class="hglow" id="hglow"></div>
+    <div class="hero" id="hero"><div class="wob"><svg width="280" height="280"><use href="#flame"/></svg></div></div>
+
+    <div class="strike" id="strike"></div>
+    <div class="flash" id="flash"></div>
+
+    <div class="dust" style="left:86px;top:262px;width:5px;height:5px"></div>
+    <div class="dust" style="left:352px;top:298px;width:4px;height:4px"></div>
+    <div class="dust" style="left:318px;top:208px;width:6px;height:6px;filter:blur(3px)"></div>
+    <div class="dust" style="left:168px;top:434px;width:4px;height:4px"></div>
+
+    <div class="vignette"></div>
+
+    <div class="numglow" id="numglow"></div>
+    <div class="num">
+      <span class="g" id="glowOld">2</span><span id="digitOld" style="opacity:0">2</span>
+      <span class="g" id="glowNew">3</span><span id="digitNew">3</span>
+    </div>
+    <div class="capsglow" id="capsglow">DAY STREAK</div>
+    <div class="caps" id="caps">DAY STREAK</div>
+    <div class="ptitle" id="ptitle">You're on fire</div>
+    <div class="pbody" id="pbody">Come back tomorrow to keep it alive.</div>
+
+    <div class="week" id="week">
+      <div class="trackglow" id="trackglow"></div>
+      <div class="track" id="track"></div>
+    </div>
+
+    <div class="cta" id="cta"><b>I'm committed</b></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h1>Streak — анімація v2</h1>
+  <p class="sub">Чирк → вогник розгорається знизу → іскри → тексти знизу → шкала дотягується до серії.</p>
+
+  <div class="controls">
+    <button class="primary" id="replay">↻ Replay</button>
+    <button id="speed">1×</button>
+    <label class="chk"><input type="checkbox" id="reduce"> Reduce motion</label>
+    <label class="chk"><input type="checkbox" id="goldchk"> Золотий текст (як в Opal)</label>
+    <button id="theme">☾ Dark</button>
+  </div>
+  <input type="range" id="scrub" min="0" max="4350" value="4350" step="10">
+  <div class="tline"><span>0</span><span>чирк</span><span>вогник + 2</span><span>БІТ</span><span>шкала</span><span>4350 ms</span></div>
+
+  <div class="phase">
+    <div data-a="0" data-b="400">Чирк</div>
+    <div data-a="400" data-b="1900">Вогник і «2»</div>
+    <div data-a="1900" data-b="2400">Біт: спалах + 2→3</div>
+    <div data-a="2400" data-b="3950">Тексти й шкала</div>
+    <div data-a="3950" data-b="4350">Дія</div>
+  </div>
+
+  <table>
+    <thead><tr><th>Час</th><th>Що</th><th>Рух</th><th>Easing</th></tr></thead>
+    <tbody id="spec"></tbody>
+  </table>
+
+  <div class="note">
+    <b>Головна зміна.</b> Вогник більше не масштабується від центру — він <b>виростає з основи</b>:
+    <code>scaleY .12→1</code> з <code>transform-origin: 50% 86%</code> плюс squash по X
+    (0.55→1.05→1). Так читається «займається», а не «прилітає».<br><br>
+    <b>Порядок як в Opal.</b> Спершу форма — і лише потім світло: глоу вступає на 480 ms, коли силует уже є.
+    Камінь спершу вилуплюється, потім починає світитись.<br><br>
+    <b>Іскри.</b> Дві системи. Від вогника — <b>постійні</b> (не тільки на вході): 14 частинок, підйом із
+    затуханням і бічним дрейфом, період 1.6–2.6 s врозбіг. По шкалі — 3 «бігунки» справа наліво,
+    і коли бігунок проходить сусідній день, той дає короткий флер: візуально серія «підпалює» себе назад.<br><br>
+    <b>Шкала.</b> Росте <code>scaleX</code> від ЛІВОГО краю — від першого дня серії до останнього.
+    Сьогоднішній вогник спершу <b>погашений</b>: його запалює іскра, яка доїхала по шкалі. Причина й наслідок,
+    а не два окремі рухи.<br><br>
+    <b>Число — барабан.</b> Стара цифра укручується вгору (<code>y −64 + rotateX −78°</code>),
+    нова виїжджає знизу з поворотом у нуль. Вікно числа має <code>overflow: hidden</code> і
+    <code>perspective: 460px</code> — без кліпу й перспективи це читається як зсув, а не як механізм.<br><br>
+    <b>Число — частина героя (як у Duolingo).</b> «2» просто проявляється (fade) ще поки вогник росте:
+    це не подія, а поточний стан. Уся подія стиснута в ОДИН біт на 1450 ms — вогник спалахує,
+    сипляться іскри, і рівно в цю мить барабан перекручує 2 на 3. Duolingo робить так само:
+    сірий вогник + старе число → спалах кольору з квадратними іскрами → нове число стрибає,
+    і тільки після цього решта UI зʼїжджає знизу стагером.<br><br>
+    <b>Хаптика.</b> <code>impactLight</code> на чирку (0), <code>impactMedium</code> коли вогник узявся (720),
+    <code>notificationSuccess</code> коли іскра запалила сьогодні (2760).<br><br>
+    <b>Reduce motion.</b> Без чирка й іскор: opacity 200 ms, шкала одразу в кінцевому стані.
+  </div>
+</div>
+
+<script>
+function bez(a,b,c,d){return function(t){if(t<=0)return 0;if(t>=1)return 1;var u=t,i,cx,dv;
+  for(i=0;i<8;i++){cx=3*a*(1-u)*(1-u)*u+3*c*(1-u)*u*u+u*u*u;dv=3*a*(1-4*u+3*u*u)+3*c*(2*u-3*u*u)+3*u*u;
+  if(Math.abs(dv)<1e-6)break;u-=(cx-t)/dv;}return 3*b*(1-u)*(1-u)*u+3*d*(1-u)*u*u+u*u*u;};}
+var EO=bez(.16,1,.3,1),O=bez(.22,.61,.36,1),B=bez(.34,1.26,.64,1),IN=bez(.4,0,1,1),S=bez(.2,.8,.2,1),FAST=bez(.1,.9,.2,1),DRUM=bez(.2,.9,.3,1);
+var q=function(i){return document.getElementById(i);},qa=function(s){return [].slice.call(document.querySelectorAll(s));};
+var phone=q('phone'),TOTAL=4350;
+
+/* ---- тиждень ---- */
+var DAYS=[['Mon',1],['Tue',1],['Wed',1],['Thu',0],['Fri',0],['Sat',0],['Sun',0]];
+var week=q('week'),cells=[];
+DAYS.forEach(function(d,i){
+  var c=document.createElement('div');
+  c.className='cell'+(d[1]?' on':'');
+  c.style.left=(i*56)+'px';
+  var mark=d[1]?'<svg class="mark"><use href="#flame"/></svg>'
+               :'<div class="ring"></div>';
+  c.innerHTML='<div class="cflare"></div>'+mark+'<div class="lbl">'+d[0]+'</div>';
+  week.appendChild(c);cells.push(c);
+});
+var todayMark=cells[2].querySelector('.mark'),flares=cells.map(function(c){return c.querySelector('.cflare');});
+
+/* ---- частинки: чирк ---- */
+var strikeSparks=[];
+for(var i=0;i<5;i++){var s=document.createElement('div');s.className='sp';
+  var sz=3+i%2*2;s.style.width=sz+'px';s.style.height=sz+'px';s.style.left='218px';s.style.top='466px';
+  phone.appendChild(s);strikeSparks.push(s);}
+
+/* ---- частинки: сплеск на момент перекиду (Duolingo-beat) ---- */
+var burst=[];
+for(var i=0;i<10;i++){var s=document.createElement('div');s.className='sp';
+  var sz=3+(i%3);s.style.width=sz+'px';s.style.height=sz+'px';s.style.left='218px';s.style.top='380px';
+  phone.appendChild(s);burst.push(s);}
+
+/* ---- частинки: постійні іскри від вогника ---- */
+var EMIT={x:220,y:400,n:14};
+var embers=[];
+function rnd(seed){var x=Math.sin(seed*127.1)*43758.5453;return x-Math.floor(x);}
+for(var i=0;i<EMIT.n;i++){
+  var e=document.createElement('div');e.className='sp';
+  var sz=2+Math.round(rnd(i)*3);
+  e.style.width=sz+'px';e.style.height=sz+'px';e.style.left='0px';e.style.top='0px';
+  phone.appendChild(e);
+  embers.push({el:e,birth:i*150,life:1600+rnd(i+9)*1000,x0:EMIT.x+(rnd(i+1)-.5)*90,
+               vx:(rnd(i+2)-.5)*46,vy:100+rnd(i+3)*90,sw:14+rnd(i+4)*22,ph:rnd(i+5)*6.28});
+}
+/* ---- частинки: бігунки по шкалі ---- */
+var runners=[];
+for(var i=0;i<3;i++){var r=document.createElement('div');r.className='runner';week.appendChild(r);runners.push(r);}
+
+/* ---- таймлайн ---- */
+var T=[];function A(el,s,d,e,f){T.push({el:el,s:s,d:d,e:e,f:f});}
+
+/* 1 · ЧИРК 0–400 */
+A(q('strike'),0,110,FAST,function(e,p){e.style.opacity=1;e.style.transform='scaleX('+p+') rotate(-18deg)';});
+A(q('strike'),110,220,O,function(e,p){e.style.opacity=1-p;});
+A(q('flash'),25,90,FAST,function(e,p){e.style.opacity=p;e.style.transform='scale('+(.3+.9*p)+')';});
+A(q('flash'),115,280,O,function(e,p){e.style.opacity=1-p;e.style.transform='scale('+(1.2+.9*p)+')';});
+strikeSparks.forEach(function(el,i){
+  var ang=-1.9+i*0.42,dist=34+i*9;
+  A(el,50+i*28,380,O,function(e,p){
+    e.style.opacity=p<.25?p/.25:1-(p-.25)/.75;
+    e.style.transform='translate('+Math.cos(ang)*dist*p+'px,'+Math.sin(ang)*dist*p+'px) scale('+(1-.5*p)+')';});
+});
+
+/* 2 · ВОГНИК РОЗГОРАЄТЬСЯ 250–1150 — росте з основи */
+A(q('hero'),250,900,null,function(e,p){
+  var g=EO(p),sy=.12+.88*g,sx=(.55+.45*g)*(1+.09*Math.sin(Math.PI*Math.min(1,p*1.15)));
+  e.style.opacity=Math.min(1,p*4);
+  e.style.transform='scale('+sx.toFixed(3)+','+sy.toFixed(3)+')';});
+/* світло — ПІСЛЯ форми */
+A(q('hglow'),580,900,EO,function(e,p){e.style.opacity=.3*p;e.style.transform='scale('+(.7+.3*p)+')';});
+A(q('dome'),560,1100,EO,function(e,p){e.style.opacity=.3*p;e.style.transform='scale('+(.72+.28*p)+')';});
+A(q('aura'),630,1000,EO,function(e,p){e.style.opacity=.16*p;e.style.transform='scale('+(.75+.25*p)+')';});
+A(q('base'),700,800,EO,function(e,p){e.style.opacity=.4*p;});
+A(q('halo'),680,1000,EO,function(e,p){e.style.opacity=.1*p;});
+qa('.bokeh').forEach(function(el,i){A(el,780+i*90,820,O,function(e,p){e.style.opacity=.1*p;e.style.transform='translateY('+12*(1-p)+'px)';});});
+qa('.faint').forEach(function(el,i){A(el,780+i*90,820,O,function(e,p){e.style.opacity=.1*p;});});
+qa('.dust').forEach(function(el,i){A(el,880+i*60,760,O,function(e,p){e.style.opacity=(.25+(i%3)*.1)*p;});});
+
+/* 3 · ЧИСЛО — частина героя (патерн Duolingo) */
+/* пари «цифра + її глоу» — глоу це розмита копія, а не тінь */
+var D2=[q('digitOld'),q('glowOld')],D3=[q('digitNew'),q('glowNew')];
+function digit(pair,op,tr){pair[0].style.opacity=op;pair[0].style.transform=tr;}
+
+/* «2» проявляється ПОВІЛЬНО, поки вогник ще росте — це ПОТОЧНИЙ стан, не подія */
+A(q('digitOld'),520,700,O,function(e,p){digit(D2,p,'none');});
+A(q('numglow'),520,700,O,function(e,p){e.style.opacity=.5*p;});
+/* пауза 680 ms — «2» стоїть і читається */
+
+/* ---- ГОЛОВНИЙ БІТ 1900: вогник спалахує + барабан + сплеск іскор ---- */
+A(q('hero'),1900,360,null,function(e,p){
+  if(p<=0)return;
+  e.style.opacity=1;
+  e.style.transform='scale('+(1+.05*Math.sin(Math.PI*p)).toFixed(3)+','+(1+.09*Math.sin(Math.PI*p)).toFixed(3)+')';});
+A(q('hglow'),1900,460,null,function(e,p){
+  if(p<=0)return;
+  e.style.opacity=(.3+.28*Math.sin(Math.PI*p)).toFixed(3);
+  e.style.transform='scale('+(1+.08*Math.sin(Math.PI*p))+')';});
+burst.forEach(function(el,i){
+  var ang=-Math.PI/2+(i-4.5)*0.34,dist=54+(i%3)*26;
+  A(el,1900+i*16,600,O,function(e,p){
+    e.style.opacity=p<.18?p/.18:1-(p-.18)/.82;
+    e.style.transform='translate('+Math.cos(ang)*dist*p+'px,'+(Math.sin(ang)*dist*p+26*p*p)+'px) scale('+(1.1-.7*p)+')';});
+});
+/* барабан як в Opal: НОВА цифра приходить ЗГОРИ, стара йде ВНИЗ.
+   У транзиті обидві дрібнішають і гаснуть — це перспектива барабана, а не поворот. */
+A(q('digitOld'),1900,300,bez(.4,0,.7,1),function(e,p){
+  if(p<=0)return;
+  digit(D2,1-p,'translateY('+(58*p)+'px) scale('+(1-.45*p)+')');});
+A(q('digitNew'),1930,340,bez(.2,.85,.3,1),function(e,p){
+  digit(D3,.15+.85*p,'translateY('+(-58*(1-p))+'px) scale('+(.55+.45*p)+')');});
+/* глоу під числом підскакує в біті */
+A(q('numglow'),1900,460,null,function(e,p){
+  if(p<=0)return;
+  e.style.opacity=(.5+.35*Math.sin(Math.PI*p)).toFixed(3);
+  e.style.transform='scale('+(1+.12*Math.sin(Math.PI*p))+')';});
+
+/* 4 · РЕШТА ЗʼЇЖДЖАЄ ЗНИЗУ 2400+ */
+A(q('caps'),2400,340,O,function(e,p){e.style.opacity=p;e.style.transform='translateY('+22*(1-p)+'px)';
+  var g=q('capsglow');g.style.opacity=p*.55;g.style.transform=e.style.transform;});
+A(q('ptitle'),2500,380,O,function(e,p){e.style.opacity=p;e.style.transform='translateY('+24*(1-p)+'px)';});
+A(q('pbody'),2580,380,O,function(e,p){e.style.opacity=p;e.style.transform='translateY('+24*(1-p)+'px)';});
+cells.forEach(function(el,i){A(el,2750+i*55,320,O,function(e,p){e.style.opacity=p;e.style.transform='translateY('+10*(1-p)+'px)';});});
+/* шкала росте від Mon праворуч */
+A(q('track'),2950,600,S,function(e,p){e.style.transform='scaleX('+p+')';e.style.opacity=.1*p;});
+A(q('trackglow'),2950,600,S,function(e,p){e.style.transform='scaleX('+p+')';e.style.opacity=.3*p;});
+/* бігунки: злива направо, перший їде на кінчику шкали */
+runners.forEach(function(el,i){
+  var st=[2950,3120,3270][i];
+  A(el,st,620,O,function(e,p){
+    e.style.opacity=p<.12?p/.12:(p>.82?(1-p)/.18:1);
+    e.style.transform='translateX('+(8+132*p)+'px) scale('+(1.15-.4*p)+')';});
+});
+/* проходить Tue — той дає флер */
+A(flares[1],3280,440,O,function(e,p){e.style.opacity=p<.35?p/.35*.55:.55-(p-.35)/.65*.55;});
+A(cells[1].querySelector('.mark'),3280,340,B,function(e,p){e.style.transform='scale('+(1+.12*Math.sin(Math.PI*p))+')';});
+/* доїхав до сьогодні — вогник займається тим самим рухом, що герой */
+A(todayMark,3560,520,null,function(e,p){
+  if(p<=0){e.style.transform='scale(0)';return;}
+  var g=EO(p),sy=.15+.85*g,sx=(.6+.4*g)*(1+.12*Math.sin(Math.PI*Math.min(1,p*1.15)));
+  e.style.transform='scale('+sx.toFixed(3)+','+sy.toFixed(3)+')';});
+A(flares[2],3560,700,O,function(e,p){e.style.opacity=p<.3?p/.3*.7:.7-(p-.3)/.7*.45;});
+
+/* 5 · ДІЯ */
+A(q('cta'),3950,350,O,function(e,p){e.style.opacity=p;e.style.transform='translateY('+16*(1-p)+'px)';});
+
+/* ---- постійні іскри (живуть завжди після 600) ---- */
+function embersAt(t){
+  embers.forEach(function(m){
+    if(t<600){m.el.style.opacity=0;return;}
+    var age=((t-600-m.birth)%(m.life))/m.life;
+    if(age<0){m.el.style.opacity=0;return;}
+    var y=-m.vy*age*(1.25-.35*age), x=m.vx*age+Math.sin(m.ph+age*4.2)*m.sw*age;
+    m.el.style.transform='translate('+(m.x0+x)+'px,'+(400+y)+'px) scale('+(1-.55*age)+')';
+    m.el.style.opacity=(age<.18? age/.18 : 1-(age-.18)/.82)*.9;
+  });
+}
+
+var SPEC=[
+  ['0–110','Чирк','смуга scaleX 0→1 + спалах','fast (.1,.9,.2,1)'],
+  ['50–430','5 іскор від чирка','розліт по дузі 34–70px, scale 1→.5','ease-out'],
+  ['250–1150','Вогник','scaleY .12→1 від основи + squash X .55→1.05→1','out-expo'],
+  ['580–1680','Світло (глоу, аура, halo)','opacity 0→30/20/10%, scale .7→1 — ПІСЛЯ форми','out-expo'],
+  ['750 →','Іскри від вогника','постійно: 14 частинок, підйом + бічний дрейф, 1.6–2.6 s','лінійний вік, ease на альфі'],
+  ['780–1640','Боке, розмиті вогники, пилинки','opacity 0→10–35%, стагер 60–90','ease-out'],
+  ['520–1220','Цифра «2» — FADE IN','лише opacity 0→1 за 700 ms, поки вогник ще росте: це стан, а не подія','ease-out'],
+  ['1220–1900','Пауза 680 ms','«2» стоїть і читається — без неї перекид не має від чого відштовхнутись','—'],
+  ['1900–2260','БІТ · спалах вогника','scale 1→1.09→1 + глоу 30%→58%→30%','sin-пульс'],
+  ['1900–2500','БІТ · сплеск іскор','10 частинок віялом 54–106px + гравітація','ease-out'],
+  ['1900–2240','БІТ · «2» укручується вгору','y −64 + rotateX −78°, гасне','ease-in'],
+  ['1990–2510','БІТ · «3» виїжджає знизу','y 64 + rotateX 78°→0','(.2,.9,.3,1)'],
+  ['2400–2960','DAY STREAK + похвала','y 22–24 → 0, стагер 80–100','ease-out'],
+  ['2750–3400','Тиждень','7 комірок, стагер 55 — Mon/Tue вже горять, Wed ПОГАШЕНИЙ','ease-out'],
+  ['2950–3550','Шкала','scaleX 0→1 від ЛІВОГО краю: від першого дня до останнього','smooth (.2,.8,.2,1)'],
+  ['2950–3890','3 іскри-бігунки','злива направо, перша їде на кінчику шкали; Tue флер на 3280','ease-out'],
+  ['3560–4080','Вогник «сьогодні»','запалюється, коли іскра доїхала — тим самим рухом, що герой','out-expo'],
+  ['3950–4300','Кнопка','y 16→0','ease-out'],
+];
+q('spec').innerHTML=SPEC.map(function(r){return '<tr><td class="t">'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td><code>'+r[3]+'</code></td></tr>';}).join('');
+
+var scrub=q('scrub'),reduce=q('reduce'),playing=false,t=0,last=0,speed=1;
+function apply(time){
+  T.forEach(function(a){
+    var p=Math.max(0,Math.min(1,(time-a.s)/a.d));
+    if(reduce.checked){p=Math.max(0,Math.min(1,(time-Math.min(a.s,400))/200));}
+    a.f(a.el,a.e?a.e(p):p);
+  });
+  if(reduce.checked){embers.forEach(function(m){m.el.style.opacity=0;});
+    strikeSparks.forEach(function(s){s.style.opacity=0;});
+    q('strike').style.opacity=0;q('flash').style.opacity=0;}
+  else embersAt(time);
+  phone.classList.toggle('loop',time>1000&&!reduce.checked);
+  qa('.phase div').forEach(function(d){d.classList.toggle('act',time>=+d.dataset.a&&time<+d.dataset.b);});
+}
+function frame(now){
+  if(!playing)return;
+  var dt=Math.min(48,now-last);last=now;t+=dt*speed;
+  if(t<=TOTAL)scrub.value=t;
+  apply(t);
+  if(t>TOTAL+9000){t=TOTAL;}
+  requestAnimationFrame(frame);
+}
+function play(){t=0;playing=true;last=performance.now();apply(0);requestAnimationFrame(frame);}
+q('replay').onclick=play;
+scrub.oninput=function(){playing=false;apply(+scrub.value);};
+reduce.onchange=function(){apply(+scrub.value);};
+q('speed').onclick=function(e){var n={1:.5,.5:.25,.25:1}[speed];speed=n;e.target.textContent=n+'×';};
+q('goldchk').onchange=function(e){phone.classList.toggle('gold',e.target.checked);};
+q('theme').onclick=function(e){
+  var light=phone.classList.toggle('light');
+  e.target.textContent=light?'☀ Light':'☾ Dark';
+  /* число днів тижня: на світлому підписи майбутніх днів лишаються secondary — вони на var() */
+  apply(+scrub.value);
+};
+function fit(){var s=Math.min(1,(window.innerHeight-120)/956);phone.style.transform='scale('+s+')';
+  document.querySelector('.stage').style.width=(440*s)+'px';document.querySelector('.stage').style.height=(956*s)+'px';}
+window.onresize=fit;fit();apply(TOTAL);setTimeout(play,400);
+</script>
+</body>
+</html>
